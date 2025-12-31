@@ -106,7 +106,7 @@ export function ProfileForm({
                 </div>
 
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex justify-end">
                 <SubmitButton />
             </CardFooter>
         </form>

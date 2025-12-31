@@ -70,6 +70,7 @@ export async function createGoal(formData: FormData) {
     }
 
     revalidatePath('/')
+    revalidatePath('/calendar')
     redirect('/')
 }
 
@@ -124,5 +125,6 @@ export async function duplicateGoal(goalId: string) {
     }
 
     revalidatePath('/')
+    revalidatePath('/calendar')
     return { success: true }
 }

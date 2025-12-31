@@ -18,8 +18,8 @@ export default async function ProfilePage() {
         .single()
 
     return (
-        <div className="container max-w-2xl py-10">
-            <Card>
+        <div className="container max-w-2xl py-10 mx-auto min-h-[calc(100vh-4rem)] flex items-center justify-center">
+            <Card className="w-full">
                 <CardHeader>
                     <CardTitle>Profile Settings</CardTitle>
                     <CardDescription>
