@@ -41,8 +41,8 @@ export async function createGoal(formData: FormData) {
         .single()
 
     if (error) {
-        console.error('Error creating goal:', error)
-        return { error: 'Failed to create goal' }
+        console.error('SERVER ACTION ERROR: Failed to insert goal:', JSON.stringify(error, null, 2))
+        return { error: 'Failed to create goal: ' + error.message }
     }
 
     if (goal && checklistJson) {
