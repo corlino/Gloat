@@ -9,6 +9,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { createGoal } from '../actions'
 import { useFormStatus } from 'react-dom'
+import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
+
+function ChecklistManager() {
+    const [items, setItems] = useState<string[]>([])
+    const [newItem, setNewItem] = useState('')
+
+    const addItem = () => {
+        if (newItem.trim()) {
+            setItems([...items, newItem.trim()])
+            setNewItem('')
+        }
+    }
+
+    const removeItem = (index: number) => {
+        setItems(items.filter((_, i) => i !== index))
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex gap-2">
+                <Input
+                    value={newItem}
+                    onChange={(e) => setNewItem(e.target.value)}
+                    placeholder="Add a checklist item (e.g., 'Drink water')"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addItem()
+                        }
+                    }}
+                />
+                <Button type="button" variant="outline" size="icon" onClick={addItem}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+            </div>
+            {items.length > 0 && (
+                <ul className="space-y-2">
+                    {items.map((item, index) => (
+                        <li key={index} className="flex items-center gap-2 bg-muted/50 p-2 rounded-md text-sm">
+                            <span className="flex-1">{item}</span>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeItem(index)}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <input type="hidden" name="checklist" value={JSON.stringify(items)} />
+        </div>
+    )
+}
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -61,17 +119,37 @@ export function CreateGoalForm() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="timeframe">Timeframe</Label>
+                        <Label htmlFor="timeframe">Goal Duration</Label>
                         <Select name="timeframe" required defaultValue="monthly">
                             <SelectTrigger>
-                                <SelectValue placeholder="Select timeframe" />
+                                <SelectValue placeholder="Select duration" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                                <SelectItem value="yearly">Yearly</SelectItem>
+                                <SelectItem value="monthly">Monthly Goal</SelectItem>
+                                <SelectItem value="yearly">Yearly Goal</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="recurrence">Recurrence (How often?)</Label>
+                    <Select name="recurrence" defaultValue="none">
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select recurrence" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">One-time / As needed</SelectItem>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-3">
+                    <Label>Checklist (Things to do for this goal)</Label>
+                    <ChecklistManager />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -109,7 +187,6 @@ export function CreateGoalForm() {
                         </div>
                     </RadioGroup>
                 </div>
-
             </CardContent>
             <CardFooter>
                 <SubmitButton />

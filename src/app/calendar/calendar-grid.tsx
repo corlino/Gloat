@@ -16,15 +16,26 @@ import {
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
+import { Badge } from '@/components/ui/badge'
 
 interface Update {
     created_at: string
     goals: {
+        id: string
         title: string
     }
+    numeric_value?: number
+    progress_text?: string
 }
 
-export function CalendarGrid({ updates }: { updates: any[] }) {
+interface Goal {
+    id: string
+    title: string
+    recurrence_type: string
+    start_date: string
+}
+
+export function CalendarGrid({ updates, goals }: { updates: any[], goals: any[] }) {
     const [currentMonth, setCurrentMonth] = useState(new Date())
 
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
@@ -40,8 +51,32 @@ export function CalendarGrid({ updates }: { updates: any[] }) {
         end: endDate
     })
 
-    const getUpdatesForDay = (day: Date) => {
-        return updates.filter(u => isSameDay(new Date(u.created_at), day))
+    const getItemsForDay = (day: Date) => {
+        // 1. Existing updates
+        const dayUpdates = updates.filter(u => isSameDay(new Date(u.created_at), day))
+
+        // 2. Scheduled daily goals
+        // Filter goals that are active (start_date <= day) and daily
+        // and NOT already completed (in dayUpdates)
+        const scheduled = goals.filter(g => {
+            const start = new Date(g.start_date)
+            // Check if goal started on or before this day
+            if (day < start) return false
+
+            // Check if already completed
+            const isCompleted = dayUpdates.some(u => u.goals?.id === g.id)
+            return !isCompleted
+        }).map(g => ({
+            type: 'scheduled',
+            goals: { title: g.title },
+            virtual: true
+        }))
+
+        // Merge updates (type 'completed' implicitly) and scheduled
+        return [
+            ...dayUpdates.map(u => ({ ...u, type: 'completed' })),
+            ...scheduled
+        ]
     }
 
     return (
@@ -68,7 +103,7 @@ export function CalendarGrid({ updates }: { updates: any[] }) {
                 ))}
 
                 {calendarDays.map((day, idx) => {
-                    const dayUpdates = getUpdatesForDay(day)
+                    const items = getItemsForDay(day)
                     const isCurrentMonth = isSameMonth(day, currentMonth)
 
                     return (
@@ -79,23 +114,35 @@ export function CalendarGrid({ updates }: { updates: any[] }) {
                         >
                             <div className="text-right text-sm mb-1">{format(day, 'd')}</div>
                             <div className="space-y-1">
-                                {dayUpdates.map((update, i) => (
+                                {items.map((item, i) => (
                                     <HoverCard key={i}>
                                         <HoverCardTrigger asChild>
-                                            <div className="text-xs truncate bg-primary/10 text-primary-foreground/90 px-1.5 py-0.5 rounded cursor-default border border-primary/20 dark:text-primary">
-                                                {update.goals?.title}
+                                            <div
+                                                className={`text-xs truncate px-1.5 py-0.5 rounded cursor-default border ${item.type === 'completed'
+                                                    ? 'bg-primary/10 text-primary-foreground/90 border-primary/20 dark:text-primary'
+                                                    : 'bg-muted text-muted-foreground border-dashed border-muted-foreground/30'
+                                                    }`}
+                                            >
+                                                {item.type === 'scheduled' ? '○ ' : ''}{item.goals?.title}
                                             </div>
                                         </HoverCardTrigger>
                                         <HoverCardContent className="w-64 z-50">
-                                            <p className="font-semibold text-sm">{update.goals?.title}</p>
-                                            {update.numeric_value && <p className="text-xs">Value: {update.numeric_value}</p>}
-                                            {update.progress_text && <p className="text-xs mt-1 text-muted-foreground">{update.progress_text}</p>}
+                                            <p className="font-semibold text-sm">{item.goals?.title}</p>
+                                            {item.type === 'completed' ? (
+                                                <>
+                                                    {item.numeric_value && <p className="text-xs">Value: {item.numeric_value}</p>}
+                                                    {item.progress_text && <p className="text-xs mt-1 text-muted-foreground">{item.progress_text}</p>}
+                                                    <Badge variant="default" className="mt-2 text-[10px] h-5">Completed</Badge>
+                                                </>
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground mt-1">Scheduled for today</p>
+                                            )}
                                         </HoverCardContent>
                                     </HoverCard>
                                 ))}
-                                {dayUpdates.length > 3 && (
+                                {items.length > 3 && (
                                     <div className="text-xs text-muted-foreground pl-1">
-                                        + {dayUpdates.length - 3} more
+                                        + {items.length - 3} more
                                     </div>
                                 )}
                             </div>

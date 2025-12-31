@@ -36,11 +36,53 @@ create table public.goals (
   description text,
   category text, -- 'health', 'career', 'creative', 'learning', 'other'
   timeframe text check (timeframe in ('monthly', 'yearly')),
+  recurrence_type text check (recurrence_type in ('daily', 'weekly', 'monthly', 'none')) default 'none',
   start_date date,
   end_date date,
   privacy text check (privacy in ('public', 'followers', 'private')) default 'public',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create table public.goal_checklist_items (
+  id uuid default uuid_generate_v4() primary key,
+  goal_id uuid references public.goals(id) on delete cascade not null,
+  item text not null,
+  position integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.goal_checklist_items enable row level security;
+
+create policy "Users can view checklist items for viewable goals"
+  on public.goal_checklist_items for select
+  using (
+    exists (
+      select 1 from public.goals
+      where public.goals.id = public.goal_checklist_items.goal_id
+      and (
+        public.goals.privacy = 'public'
+        or public.goals.user_id = auth.uid()
+        or (
+          public.goals.privacy = 'followers'
+          and exists (
+            select 1 from public.follows
+            where follower_id = auth.uid()
+            and following_id = public.goals.user_id
+          )
+        )
+      )
+    )
+  );
+
+create policy "Users can insert checklist items for their own goals"
+  on public.goal_checklist_items for insert
+  with check (
+    exists (
+      select 1 from public.goals
+      where public.goals.id = public.goal_checklist_items.goal_id
+      and public.goals.user_id = auth.uid()
+    )
+  );
 
 alter table public.goals enable row level security;
 

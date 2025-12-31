@@ -19,10 +19,18 @@ export default async function CalendarPage() {
         goals!inner (
             id,
             title,
-            color: category -- we can map category to color later
+            color: category,
+            recurrence_type
         )
     `)
         .eq('goals.user_id', user.id)
+
+    const { data: goals } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('recurrence_type', 'daily') // Only fetching daily for calendar schedule for now
+    // If we want to support weekly/monthly scheduling visualization, we'd need more logic
 
     return (
         <div className="space-y-6">
@@ -31,7 +39,7 @@ export default async function CalendarPage() {
                 <p className="text-muted-foreground">Visualizing your consistency.</p>
             </div>
 
-            <CalendarGrid updates={updates || []} />
+            <CalendarGrid updates={updates || []} goals={goals || []} />
         </div>
     )
 }
